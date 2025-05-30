@@ -4,6 +4,8 @@
 
 ```
 project/
+├── Hamilton.py
+├── Euler.py                    #Solvers
 ├── app.py                      # Streamlit main program
 ├── data/
 │   ├── pku_all_simple_paths_15.csv   
