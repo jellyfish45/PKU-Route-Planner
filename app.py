@@ -9,7 +9,7 @@ from Hamilton import HamiltonProgramming
 from Euler import EulerProgramming
 
 #1. 读入数据
-df=pd.read_csv("pku_all_simple_paths_15.csv")
+df=pd.read_csv("./data/pku_all_simple_paths_15.csv")
 Simple_df=df.copy()
 
 df=df[(df['预计步行时间_分钟']<=8.4)&(df['预计步行时间_分钟']>=6.6)] #简单数据筛选一下，不然数据量太大，易达到python极限
@@ -19,7 +19,7 @@ Simple_df_cleaned = Simple_df.loc[Simple_df.groupby("无向边")["预计步行�
 simple_df=Simple_df_cleaned.drop(columns=["无向边"])
 
 
-locations_df = pd.read_csv("pku_locations_updated.csv")  
+locations_df = pd.read_csv("./data/pku_locations_updated.csv")  
 locations_df["经度"] = locations_df["经纬度"].apply(lambda x: float(x.split(",")[0]))
 locations_df["纬度"] = locations_df["经纬度"].apply(lambda x: float(x.split(",")[1]))
 
@@ -189,7 +189,7 @@ if "best_path" in st.session_state:
                 full_node_list.extend(node_ids)
         return [node_id_to_coord[node] for node in full_node_list if node in node_id_to_coord]
     
-    node_coordinates_df = pd.read_csv("pku_walk_node_locations.csv")  
+    node_coordinates_df = pd.read_csv("./data/pku_walk_node_locations.csv")  
     node_id_to_coord = dict(zip(node_coordinates_df["node"], zip(node_coordinates_df["lat"], node_coordinates_df["lng"])))
     
     path_coords = get_full_path_coordinates(best_path, df, node_id_to_coord)
