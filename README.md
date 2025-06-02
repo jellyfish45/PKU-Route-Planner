@@ -17,7 +17,7 @@ project/
 ## 2. Installation
 ```python
 pip install -r requirements
-python app.py
+streamlit run app.py
 ```
 
 ## 3. Demonstration
