@@ -33,12 +33,12 @@ streamlit run app.py
 
 ### 1. Reality Backgroud
 
-Peking University is one of China's top2 universities and are surely worth visiting. In order to provide tourism solutions for tourists and campus security staff, we build PKU-Route-Planner to achieve a no-return tourism solution.
+Peking University is one of the top two universities in China and is undoubtedly worth visiting. To support both tourists and campus security staff, we have developed PKU Route Planner — a solution designed to generate non-repetitive (no-return) travel routes across campus.
 
-We utilized 数学规划方法 towards three specific usage:
- - Interact with LLMs to provide reliable travel spots.
- - Manually choose spots to visit.
- - For school staff, provide different paths (in this case: 最短路问题和欧拉通路分别建模）.
+We apply mathematical programming techniques to address three key use cases:
+- LLM-assisted recommendations for popular and meaningful spots to visit.
+- Manual selection of points of interest for customizable route planning.
+- Path planning for campus staff, including tailored solutions using models for the shortest path and the Eulerian trail problem.
 
 ### 2. Math Model
 
@@ -63,45 +63,74 @@ $$
 \min \sum_{(i, j, \text{id}) \in E} w_{ij}^{(\text{id})} \cdot x_{ij}^{(\text{id})}
 $$
 
+
+#### Eulerian Path on a Undirected Simple Graph（无向简单图）
+
+
+Given an undirected simple graph $G = (V, E)$, where:
+
+- $V$ is the set of vertices;
+- $E$ is the set of undirected edges (no self-loops or multiple edges).
+
+The goal is to determine whether there exists an Eulerian path that traverses each edge **exactly once**.
+
+##### Decision Variables
+
+- $x_{ij} \in \{0,1\}$: Equals 1 if edge $(i, j)$ is selected in the path, 0 otherwise.
+- $f_{ij} \in \mathbb{Z}_{\geq 0}$: Flow from node $i$ to node $j$, used to eliminate subtours.
+- $y_i \in \{0,1\}$: Equals 1 if node $i$ is selected as the starting point.
+- $z_i \in \{0,1\}$: Equals 1 if node $i$ is selected as the ending point.
+
+
+##### Objective Function
+
+Maximize:
+$$
+\max\ 1
+$$
+
+(This is a feasibility problem — the goal is simply to determine whether a feasible Eulerian path exists.)
+
+
 ##### Constraints
 
-1. Degree Constraints
+1. **Flow Capacity Constraints (simplified MTZ-style subtour elimination)**  
+   $$
+   f_{ij} + f_{ji} \leq |V| - 1 \quad \forall (i,j) \in E
+   $$
 
-Start node (node 0):
+2. **Flow Conservation at the Start Node $s$**  
+   $$
+   \sum_{j \in N(s)} (f_{sj} - f_{js}) = |V| - 1
+   $$
 
-$$
-\sum_{(0, j, \text{id}) \in E} x_{0j}^{(\text{id})} = 1 \quad \text{(out-degree)}
-$$
-$$
-\sum_{(i, 0, \text{id}) \in E} x_{i0}^{(\text{id})} = 0 \quad \text{(in-degree)}
-$$
+3. **Flow Balance for All Other Nodes**  
+   $$
+   \sum_{j \in N(i)} (f_{ij} - f_{ji}) = -1 \quad \forall i \in V \setminus \{s\}
+   $$
 
-End node (node $ n-1 $):
+4. **Non-negativity of Flow Variables**  
+   $$
+   f_{ij} \geq 0 \quad \forall i \neq j \in V
+   $$
 
-$$
-\sum_{(i, n-1, \text{id}) \in E} x_{i,n-1}^{(\text{id})} = 1 \quad \text{(in-degree)}
-$$
-$$
-\sum_{(n-1, j, \text{id}) \in E} x_{n-1,j}^{(\text{id})} = 0 \quad \text{(out-degree)}
-$$
+5. **Degree Constraints (Path Structure)**  
+   $$
+   \sum_{j \in N(i)} (x_{ij} - x_{ji}) = y_i - z_i \quad \forall i \in V
+   $$
 
-Intermediate nodes $ j \in V \setminus \{0, n-1\} $:
+6. **Unique Start and End Nodes**  
+   $$
+   \sum_{i \in V} y_i = 1,\quad \sum_{i \in V} z_i = 1
+   $$
 
-$$
-\sum_{(i, j, \text{id}) \in E} x_{ij}^{(\text{id})} = 1 \quad \text{(in-degree)}
-$$
-$$
-\sum_{(j, k, \text{id}) \in E} x_{jk}^{(\text{id})} = 1 \quad \text{(out-degree)}
-$$
+7. **Undirected Edge Constraint (Simple Graph)**  
+   $$
+   x_{ij} + x_{ji} \leq 1 \quad \forall (i,j) \in E
+   $$
 
-2. Subtour Elimination (Miller–Tucker–Zemlin Constraints)
-
-To prevent disconnected cycles (subtours), we use MTZ constraints:
-
-For all $ (i, j, \text{id}) \in E $, with $ i \ne j $:
-
-$$
-u_i - u_j + n \cdot x_{ij}^{(\text{id})} \le n - 1
-$$
-Where $ u_i \in [0, n-1] $ for all $ i \in V $
-
+8. **Variable Domains**  
+   $$
+   x_{ij} \in \{0,1\} \quad \forall (i,j) \in E \\
+   y_i, z_i \in \{0,1\} \quad \forall i \in V
+   $$
