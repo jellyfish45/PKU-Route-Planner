@@ -21,8 +21,3 @@ project/
 pip install -r requirements
 streamlit run app.py
 ```
-
-## 3. Demonstration
-<video src="https://github.com/user-attachments/assets/591224b7-3f09-4b52-bf50-d8b82cadce2a" controls width="600">
-  Your browser does not support the video tag.
-</video>
