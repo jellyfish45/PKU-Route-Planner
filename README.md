@@ -46,7 +46,7 @@ We apply mathematical programming techniques to address three key use cases:
 
 Given a directed multigraph $ G = (V, E) $, where:
 
-- $ V $ is the set of nodes, indexed from $ 0 $ to $ n - 1 $
+- $V$ is the set of nodes, indexed from $ 0 $ to $ n - 1 $
 - $ E \subseteq V \times V \times \text{ID} $ is the set of directed multi-edges, with each edge represented as $ (i, j, \text{id}) $, denoting a directed edge from node $ i $ to node $ j $, identified by a unique edge id
 - Each edge $ (i, j, \text{id}) $ has an associated weight (walking time) $ w_{ij}^{(\text{id})} $
 
