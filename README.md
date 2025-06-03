@@ -11,7 +11,8 @@ project/
 ├── app.py                      # Streamlit main program
 ├── data/
 │   ├── pku_all_simple_paths.csv   
-│   └── pku_locations_updated.csv    
+│   ├── pku_locations_updated.csv
+│   └── pku_walk_node_locations.csv
 └── requirements.txt           # Dependencies required
 ```
 
