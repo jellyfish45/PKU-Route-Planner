@@ -18,6 +18,8 @@ project/
 
 ## 2. Installation
 ```python
+git clone https://github.com/jellyfish45/PKU-Route-Planner.git
+cd PKU-Route-Planner
 pip install -r requirements
 streamlit run app.py
 ```
