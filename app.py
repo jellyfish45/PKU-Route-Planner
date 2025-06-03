@@ -119,13 +119,10 @@ class ChatCompletion:
 # 数据加载（缓存优化）
 @st.cache_data
 def load_data():
-    df = pd.read_csv("./data/pku_all_simple_paths_15.csv")
+    df = pd.read_csv("./data/pku_all_simple_paths.csv")
     locations_df = pd.read_csv("./data/pku_locations_updated.csv")
     node_coordinates_df = pd.read_csv("./data/pku_walk_node_locations.csv")
     
-    # 路径过滤（6.6-8.6 分钟）
-    df = df[(df['预计步行时间_分钟'] >= 6.6) & (df['预计步行时间_分钟'] <= 8.6)]
-    #df = df[df['路径节点数']<=6]
     Simple_df = df.copy()
     Simple_df["无向边"] = Simple_df.apply(lambda row: tuple(sorted([row["起点"], row["终点"]])), axis=1)
     Simple_df_cleaned = Simple_df.loc[Simple_df.groupby("无向边")["预计步行时间_分钟"].idxmin()].reset_index(drop=True)
@@ -189,12 +186,12 @@ if 'path_results' not in st.session_state:
     st.session_state.path_results = {}
 
 with llm_tab:
-    user_input = st.text_area("请输入您的游览需求：", value="我喜欢去在校学生多的地方", key="llm_input")
+    user_input = st.text_area("请输入您的游览需求：", value="我喜欢去热闹的地方", key="llm_input")
 
     if st.button("通过大语言模型推荐"):
         with st.spinner("正在获取推荐景点..."):
             recommended_spots = get_recommended_spots(user_input)
-
+            st.write(f"[推荐景点]:{recommended_spots}")
             if not recommended_spots:
                 st.error("❌ 无法获取有效推荐景点，请检查输入或 API 配置。")
             else:
@@ -235,7 +232,6 @@ with manual_tab:
 
 with security_tab:
     selected_spots = st.multiselect("请选择您想巡逻的位置（至少2个，最多8个）：", options=spot_list, key="security_select")
-    is_shortest_only = st.checkbox("仅进行最短路规划", key="security_shortest_only")
     if st.button("开始规划路径", key="security_plan_button"):
         if len(selected_spots) < 2:
             st.error("❌ 请至少选择2个景点！")
@@ -252,4 +248,4 @@ with security_tab:
                                      center, 
                                      boundary_coords, 
                                      max_points,
-                                     is_shortest_only=is_shortest_only)
+                                     is_shortest_only=None)

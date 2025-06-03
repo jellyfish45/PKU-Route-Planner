@@ -15,13 +15,25 @@ import re
 import json
 import concurrent.futures
 from openai import OpenAI
-from Render import display_path_comparison_map,display_path_comparison_map_simu
-from path_plan import plan_paths,plan_paths_simu
-from Hamilton import HamiltonProgramming
-from Euler import EulerProgramming
+from Render import display_path_comparison_map, display_path_comparison_map_simu
+from path_plan import plan_paths, plan_paths_simu
 
+def handle_path_planning(selected_spots, df, simple_df, locations_df, node_coordinates_df, center, boundary_coords, max_points, is_shortest_only):
+    # 检查 selected_spots 是否有效
+    if len(selected_spots) < 2:
+        st.error("❌ 请至少选择2个景点！")
+        return
+    if len(selected_spots) > 8:
+        st.error("❌ 最多选择8个景点！")
+        return
 
-def handle_path_planning(selected_spots, df, simple_df,locations_df, node_coordinates_df,center, boundary_coords, max_points, is_shortest_only):
+    # 检查数据完整性
+    missing_nodes = [spot for spot in selected_spots if spot not in simple_df["起点"].values and spot not in simple_df["终点"].values]
+    if missing_nodes:
+        st.error(f"❌ 数据中缺少以下景点的路径信息：{missing_nodes}")
+        return
+
+    # 调用路径规划函数
     if is_shortest_only:
         results = plan_paths(selected_spots, df, simple_df)
     else:
@@ -39,11 +51,26 @@ def handle_path_planning(selected_spots, df, simple_df,locations_df, node_coordi
         "simple_filtered_df": results[7]
     }
 
-    display_path_results(results,df, locations_df, node_coordinates_df,center, boundary_coords, max_points, is_shortest_only=is_shortest_only)
+    display_path_results(results, df, locations_df, node_coordinates_df, center, boundary_coords, max_points, is_shortest_only=is_shortest_only)
 
+def display_path_results(results, df, locations_df, node_coordinates_df, center, boundary_coords, max_points, is_shortest_only=False):
+    h_path, h_time, h_status, e_path, e_time, e_status, filtered_df, simple_filtered_df = results
 
-def display_path_results(results, df, locations_df, node_coordinates_df,center, boundary_coords, max_points, is_shortest_only=False):
-    h_path, h_time, h_status, e_path, e_time, e_status, *_ = results
+    # 调试：打印路径权重
+    if h_path:
+        weights = []
+        for u, v in h_path:
+            sub = simple_filtered_df[((simple_filtered_df['起点'] == str(u)) & (simple_filtered_df['终点'] == str(v))) |
+                                    ((simple_filtered_df['起点'] == str(v)) & (simple_filtered_df['终点'] == str(u)))]
+            weights.append(sub["预计步行时间_分钟"].min() if not sub.empty else "缺失")
+        #st.write(f"[调试] 哈密顿路径边权重：{weights}")
+    if e_path and not is_shortest_only:
+        weights = []
+        for u, v in e_path:
+            sub = simple_filtered_df[((simple_filtered_df['起点'] == str(u)) & (simple_filtered_df['终点'] == str(v))) |
+                                    ((simple_filtered_df['起点'] == str(v)) & (simple_filtered_df['终点'] == str(u)))]
+            weights.append(sub["预计步行时间_分钟"].min() if not sub.empty else "缺失")
+        #st.write(f"[调试] 欧拉路径边权重：{weights}")
 
     if is_shortest_only:
         st.markdown("### 哈密顿路径")
@@ -56,8 +83,7 @@ def display_path_results(results, df, locations_df, node_coordinates_df,center, 
         display_path("欧拉", e_path, e_time, e_status)
         compare_paths(h_time, e_time)
 
-    display_map(df, locations_df, node_coordinates_df,center, boundary_coords, max_points,is_shortest_only)
-
+    display_map(df, locations_df, node_coordinates_df, center, boundary_coords, max_points, is_shortest_only)
 
 def display_path(name, path, time, status):
     st.markdown(f"**状态**: {status}")
@@ -69,29 +95,26 @@ def display_path(name, path, time, status):
         st.markdown("**路径**: 无")
         st.markdown("**预计步行时间**: 无")
 
-
 def compare_paths(h_time, e_time):
-    if h_time and e_time:
+    if h_time != float('inf') and e_time != float('inf'):
         if h_time < e_time:
-            st.success(f"🏆 哈密顿路径更优，预计 {h_time:.1f} 分钟")
-        elif e_time < h_time:
-            st.success(f"🏆 欧拉路径更优，预计 {e_time:.1f} 分钟")
+            st.success(f"🏆 哈密顿路径 [{h_time:.1f} 分钟] 优于欧拉路径 [{e_time:.1f} 分钟]")
+        elif h_time > e_time:
+            st.success(f"🏆 欧拉路径 [{e_time:.1f} 分钟] 优于哈密顿路径 [{h_time:.1f} 分钟]")
         else:
-            st.info(f"⚖️ 两种路径时间相等，均为 {h_time:.1f} 分钟")
+            st.info(f"⚖️ 哈密顿路径和欧拉路径时间相同：{h_time:.1f} 分钟")
     else:
-        st.error("❌ 无可行路径")
-
+        st.warning("⚠️ 无法比较路径：至少一个路径无效")
 
 def display_map(
     df, locations_df, node_coordinates_df,
-    center, boundary_coords, max_points,is_shortest_only=True
+    center, boundary_coords, max_points, is_shortest_only=True
 ):
-    if st.session_state.selected_spots and st.session_state.path_results:
+    if st.session_state.get('selected_spots') and st.session_state.get('path_results'):
         if is_shortest_only:
-            # 如果是安全巡视，调用支持non_tourism参数的函数
             display_path_comparison_map(
-                st.session_state.selected_spots,
-                st.session_state.path_results,
+                st.session_state['selected_spots'],
+                st.session_state['path_results'],
                 df,
                 locations_df,
                 node_coordinates_df,
@@ -100,10 +123,9 @@ def display_map(
                 max_points
             )
         else:
-            # 否则调用不支持non_tourism参数的函数
             display_path_comparison_map_simu(
-                st.session_state.selected_spots,
-                st.session_state.path_results,
+                st.session_state['selected_spots'],
+                st.session_state['path_results'],
                 df,
                 locations_df,
                 node_coordinates_df,
@@ -111,4 +133,3 @@ def display_map(
                 boundary_coords,
                 max_points
             )
-
