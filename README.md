@@ -5,7 +5,9 @@
 ```
 project/
 ├── Hamilton.py
-├── Euler.py                    #Solvers
+├── Euler.py                    # Solvers
+├── utils.py                    # useful functions
+├── Render.py                   # Web drawing
 ├── app.py                      # Streamlit main program
 ├── data/
 │   ├── pku_all_simple_paths_15.csv   
